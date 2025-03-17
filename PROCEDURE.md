@@ -225,27 +225,37 @@ Create a script (for example, /home/\<USERNAME>/watch_deploy.sh) that monitors t
 ```sh
 #!/bin/sh
 
-# Configuration
+# Configuration - Replace placeholders with actual values
 WATCH_DIR="/home/<USERNAME>/shared"
 TRIGGER_FILE="$WATCH_DIR/deploy_trigger.txt"
 DEPLOY_SCRIPT="/home/<USERNAME>/<PROJECT>/deploy.sh"
 LOG_FILE="/var/log/deploy_watch.log"
 LOCK_FILE="/tmp/deploy.lock"
 
-echo "$(date) - Monitoring $WATCH_DIR for deployment trigger..." | tee -a "$LOG_FILE"
+# Function for timestamped logging
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
 
-# Ensure log file exists and is writable
-touch "$LOG_FILE"
-chmod 664 "$LOG_FILE"
+# Ensure log file exists and is writable BEFORE writing to it
+touch "$LOG_FILE" && chmod 664 "$LOG_FILE"
+
+# Ensure inotifywait is installed before proceeding
+command -v inotifywait >/dev/null 2>&1 || { log "ERROR: inotifywait not found! Install inotify-tools."; exit 1; }
+
+log "Monitoring $WATCH_DIR for deployment trigger..."
 
 # Use inotifywait in monitor mode
 inotifywait -m -e create -e modify "$WATCH_DIR" | while read path action file; do
     if [ "$file" = "deploy_trigger.txt" ]; then
-        echo "$(date) - Trigger file detected: $file ($action)" | tee -a "$LOG_FILE"
+        log "Trigger file detected: $file ($action)"
+
+        # Remove trigger file immediately to ensure new changes aren't ignored
+        [ -f "$TRIGGER_FILE" ] && rm -f "$TRIGGER_FILE"
 
         # Ensure that deployment requests queue up
         while [ -f "$LOCK_FILE" ]; do
-            echo "$(date) - Deployment already in progress, waiting..." | tee -a "$LOG_FILE"
+            log "Deployment already in progress, waiting..."
             sleep 5  # Wait and check again
         done
 
@@ -253,16 +263,16 @@ inotifywait -m -e create -e modify "$WATCH_DIR" | while read path action file; d
 
         # Execute deployment script
         if "$DEPLOY_SCRIPT" >> "$LOG_FILE" 2>&1; then
-            echo "$(date) - Deployment executed successfully." | tee -a "$LOG_FILE"
+            log "Deployment executed successfully."
         else
-            echo "$(date) - ERROR: Deployment failed!" | tee -a "$LOG_FILE"
+            log "ERROR: Deployment failed!"
         fi
 
         # Cleanup
         rm -f "$LOCK_FILE"
-        rm -f "$TRIGGER_FILE"
     fi
 done
+
 
 ```
 
