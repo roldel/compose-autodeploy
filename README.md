@@ -1,10 +1,20 @@
 # Compose-AutoDeploy
 
-**A Minimalist, Event-Driven Auto-Deployment System for Docker Compose Projects**
+<br>
+
+### **A Minimalist, Event-Driven Auto-Deployment System for Docker Compose Projects**
 
 ## Overview
 
 This repository provides a lightweight, event-driven solution for automating deployments of Docker Compose-based projects. The system is designed to streamline the deployment process by leveraging webhooks and file-based triggers, ensuring seamless updates with minimal resource overhead.
+
+<br>
+
+## Implementation :
+
+### [**PROCEDURE.md**](PROCEDURE.md)
+
+<br>
 
 ### Key Features:
 - **Webhook Integration**: A web framework-based endpoint (e.g., Django, Flask, Node.js, or Laravel) listens for GitHub push events on the `main` branch. Upon detecting a push, it writes a trigger file to a shared volume.
