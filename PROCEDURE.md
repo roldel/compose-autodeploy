@@ -234,10 +234,9 @@ DEPLOY_SCRIPT="/home/<USERNAME>/<PROJECT>/deploy.sh"
 
 echo "Monitoring $WATCH_DIR for deployment trigger..."
 
-while true; do
-    # inotifywait will block until a create or modify event occurs in the directory.
-    inotifywait -e create -e modify "$WATCH_DIR"
-    if [ -f "$TRIGGER_FILE" ]; then
+# Use inotifywait in monitor mode (-m) and output events in real-time
+inotifywait -m -e create -e modify "$WATCH_DIR" | while read path action file; do
+    if [ "$file" = "deploy_trigger.txt" ]; then
         echo "Deploy trigger detected! Executing deployment script..."
         $DEPLOY_SCRIPT
         echo "Deployment executed. Removing trigger file."
